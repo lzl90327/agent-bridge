@@ -1,7 +1,7 @@
 import { WebSocketServer, WebSocket } from 'ws';
-import { Pool } from 'pg';
+import { getDB } from '../db';
 import { RunManager } from '../services/RunManager';
-import { WSClientMessage, WSServerMessage, Run } from '../types';
+import { WSClientMessage, WSServerMessage } from '../types';
 
 interface ClientInfo {
   ws: WebSocket;
@@ -9,7 +9,8 @@ interface ClientInfo {
   runId?: string;
 }
 
-export function createWebSocketServer(wss: WebSocketServer, db: Pool) {
+export function createWebSocketServer(wss: WebSocketServer) {
+  const db = getDB();
   const clients = new Map<string, ClientInfo>();
   const runManager = new RunManager(db);
 
@@ -20,12 +21,14 @@ export function createWebSocketServer(wss: WebSocketServer, db: Pool) {
     console.log(`Client connected: ${clientId}`);
 
     ws.on('message', async (data: Buffer) => {
+      let messageId = 'unknown';
       try {
         const message: WSClientMessage = JSON.parse(data.toString());
-        await handleMessage(clientId, message, clients, runManager, db);
+        messageId = message.id;
+        await handleMessage(clientId, message, clients, runManager);
       } catch (error) {
         console.error('WebSocket message error:', error);
-        sendError(ws, message?.id || 'unknown', 'Invalid message format');
+        sendError(ws, messageId, 'Invalid message format');
       }
     });
 
@@ -44,8 +47,7 @@ async function handleMessage(
   clientId: string,
   message: WSClientMessage,
   clients: Map<string, ClientInfo>,
-  runManager: RunManager,
-  db: Pool
+  runManager: RunManager
 ) {
   const client = clients.get(clientId);
   if (!client) return;
@@ -188,7 +190,7 @@ async function handleInput(
 
     // 更新状态
     await runManager.updateStatus(run_id, 'running', {
-      waiting_input: null
+      waiting_input: undefined
     });
 
     // 发送确认

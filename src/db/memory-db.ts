@@ -20,12 +20,11 @@ class MemoryDB {
   runSnapshots: Map<string, RunSnapshot[]> = new Map();
 
   // App CRUD
-  async createApp(app: Omit<App, 'id' | 'created_at' | 'updated_at'>): Promise<App> {
+  async createApp(app: Omit<App, 'id' | 'created_at'>): Promise<App> {
     const newApp: App = {
-      ...app,
+      ...app as any,
       id: uuidv4(),
-      created_at: new Date(),
-      updated_at: new Date()
+      created_at: new Date()
     };
     this.apps.set(newApp.id, newApp);
     return newApp;
@@ -40,12 +39,11 @@ class MemoryDB {
   }
 
   // User CRUD
-  async createUser(user: Omit<User, 'id' | 'created_at' | 'updated_at'>): Promise<User> {
+  async createUser(user: Omit<User, 'id' | 'created_at'>): Promise<User> {
     const newUser: User = {
-      ...user,
+      ...user as any,
       id: uuidv4(),
-      created_at: new Date(),
-      updated_at: new Date()
+      created_at: new Date()
     };
     this.users.set(newUser.id, newUser);
     return newUser;
@@ -55,19 +53,18 @@ class MemoryDB {
     return this.users.get(id) || null;
   }
 
-  async getUserByAppScopedId(appId: string, appScopedId: string): Promise<User | null> {
+  async getUserByAppScopedId(appId: string, externalId: string): Promise<User | null> {
     return Array.from(this.users.values()).find(
-      u => u.app_id === appId && u.app_scoped_id === appScopedId
+      u => u.app_id === appId && u.external_id === externalId
     ) || null;
   }
 
   // Session CRUD
-  async createSession(session: Omit<Session, 'id' | 'created_at' | 'updated_at'>): Promise<Session> {
+  async createSession(session: Omit<Session, 'id' | 'created_at'>): Promise<Session> {
     const newSession: Session = {
-      ...session,
+      ...session as any,
       id: uuidv4(),
-      created_at: new Date(),
-      updated_at: new Date()
+      created_at: new Date()
     };
     this.sessions.set(newSession.id, newSession);
     return newSession;
@@ -83,16 +80,18 @@ class MemoryDB {
     );
   }
 
+  async updateSession(id: string, updates: Partial<Session>): Promise<Session | null> {
+    const session = this.sessions.get(id);
+    if (!session) return null;
+    const updated = { ...session, ...updates } as Session;
+    this.sessions.set(id, updated);
+    return updated;
+  }
+
   // Run CRUD
-  async createRun(run: Omit<Run, 'id' | 'created_at' | 'updated_at'>): Promise<Run> {
-    const newRun: Run = {
-      ...run,
-      id: uuidv4(),
-      created_at: new Date(),
-      updated_at: new Date()
-    };
-    this.runs.set(newRun.id, newRun);
-    return newRun;
+  async createRun(run: Run): Promise<Run> {
+    this.runs.set(run.id, run);
+    return run;
   }
 
   async getRun(id: string): Promise<Run | null> {
@@ -102,7 +101,7 @@ class MemoryDB {
   async updateRun(id: string, updates: Partial<Run>): Promise<Run | null> {
     const run = this.runs.get(id);
     if (!run) return null;
-    const updated = { ...run, ...updates, updated_at: new Date() };
+    const updated = { ...run, ...updates } as Run;
     this.runs.set(id, updated);
     return updated;
   }
@@ -112,12 +111,11 @@ class MemoryDB {
   }
 
   // Skill CRUD
-  async createSkill(skill: Omit<Skill, 'id' | 'created_at' | 'updated_at'>): Promise<Skill> {
+  async createSkill(skill: Omit<Skill, 'id' | 'created_at'>): Promise<Skill> {
     const newSkill: Skill = {
-      ...skill,
+      ...skill as any,
       id: uuidv4(),
-      created_at: new Date(),
-      updated_at: new Date()
+      created_at: new Date()
     };
     this.skills.set(newSkill.id, newSkill);
     return newSkill;
@@ -129,17 +127,16 @@ class MemoryDB {
 
   async getSkillByRef(appId: string, ref: string): Promise<Skill | null> {
     return Array.from(this.skills.values()).find(
-      s => s.app_id === appId && s.skill_ref === ref
+      s => s.handler_ref === ref || s.runtime_config?.skill_ref === ref
     ) || null;
   }
 
   // Tool CRUD
-  async createTool(tool: Omit<Tool, 'id' | 'created_at' | 'updated_at'>): Promise<Tool> {
+  async createTool(tool: Omit<Tool, 'id' | 'created_at'>): Promise<Tool> {
     const newTool: Tool = {
-      ...tool,
+      ...tool as any,
       id: uuidv4(),
-      created_at: new Date(),
-      updated_at: new Date()
+      created_at: new Date()
     };
     this.tools.set(newTool.id, newTool);
     return newTool;
@@ -150,12 +147,11 @@ class MemoryDB {
   }
 
   // Artifact CRUD
-  async createArtifact(artifact: Omit<Artifact, 'id' | 'created_at' | 'updated_at'>): Promise<Artifact> {
+  async createArtifact(artifact: Omit<Artifact, 'id' | 'created_at'>): Promise<Artifact> {
     const newArtifact: Artifact = {
-      ...artifact,
+      ...artifact as any,
       id: uuidv4(),
-      created_at: new Date(),
-      updated_at: new Date()
+      created_at: new Date()
     };
     this.artifacts.set(newArtifact.id, newArtifact);
     return newArtifact;
@@ -173,15 +169,35 @@ class MemoryDB {
     });
   }
 
+  async updateArtifact(id: string, updates: Partial<Artifact>): Promise<Artifact | null> {
+    const artifact = this.artifacts.get(id);
+    if (!artifact) return null;
+    const updated = { ...artifact, ...updates } as Artifact;
+    this.artifacts.set(id, updated);
+    return updated;
+  }
+
   // Memory CRUD
   async createMemory(memory: Omit<Memory, 'id' | 'created_at'>): Promise<Memory> {
     const newMemory: Memory = {
-      ...memory,
+      ...memory as any,
       id: uuidv4(),
       created_at: new Date()
     };
     this.memories.set(newMemory.id, newMemory);
     return newMemory;
+  }
+
+  async getMemory(id: string): Promise<Memory | null> {
+    return this.memories.get(id) || null;
+  }
+
+  async updateMemory(id: string, updates: Partial<Memory>): Promise<Memory | null> {
+    const memory = this.memories.get(id);
+    if (!memory) return null;
+    const updated = { ...memory, ...updates } as Memory;
+    this.memories.set(id, updated);
+    return updated;
   }
 
   async queryMemories(ownerType: string, ownerId: string, limit: number = 10): Promise<Memory[]> {
@@ -194,7 +210,7 @@ class MemoryDB {
   // Run Events
   async logEvent(event: Omit<RunEvent, 'id'>): Promise<RunEvent> {
     const newEvent: RunEvent = {
-      ...event,
+      ...event as any,
       id: uuidv4()
     };
     const events = this.runEvents.get(event.run_id) || [];
@@ -214,7 +230,7 @@ class MemoryDB {
   // Run Snapshots
   async createSnapshot(snapshot: Omit<RunSnapshot, 'id'>): Promise<RunSnapshot> {
     const newSnapshot: RunSnapshot = {
-      ...snapshot,
+      ...snapshot as any,
       id: uuidv4()
     };
     const snapshots = this.runSnapshots.get(snapshot.run_id) || [];

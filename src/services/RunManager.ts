@@ -19,8 +19,7 @@ export class RunManager {
         start_time: new Date(),
         last_event_sequence: 0
       },
-      created_at: new Date(),
-      updated_at: new Date()
+      created_at: new Date()
     };
 
     await this.db.createRun(run);
@@ -29,7 +28,7 @@ export class RunManager {
 
   // 更新 Run 状态
   async updateStatus(runId: string, status: RunStatus, data?: Partial<Run>): Promise<void> {
-    const updates: Partial<Run> = { status, updated_at: new Date() };
+    const updates: Partial<Run> = { status };
 
     if (data?.output) updates.output = data.output;
     if (data?.error) updates.error = data.error;
